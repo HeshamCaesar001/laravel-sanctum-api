@@ -2,18 +2,36 @@
 
 namespace App\Http\Controllers;
 use App\Models\Product;
+use App\Transformers\ProductTransformer;
 use Illuminate\Http\Request;
-
+use Illuminate\Http\Response;
+use League\Fractal\Manager;
+use League\Fractal\Resource\Collection;
 class ProductController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * @var Manager
      */
+    private $fractal;
+
+    /**
+     * @var UserTransformer
+     */
+    private $productTransformer;
+
+    function __construct(Manager $fractal, productTransformer $productTransformer)
+    {
+        $this->fractal = $fractal;
+        $this->productTransformer = $productTransformer;
+    }
+
     public function index()
     {
-       return Product::all();
+        $products = Product::all();
+      $products = new Collection($products, $this->productTransformer); // Create a resource collection transformer
+        $products = $this->fractal->createData($products); // Transform data
+
+        return $products->toArray(); // Get transformed array of data
     }
 
     /**
@@ -40,7 +58,12 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        return  Product::find($id);
+        $product = Product::where('id',$id)->get();
+        $product = new Collection($product, $this->productTransformer); // Create a resource collection transformer
+        $product = $this->fractal->createData($product); // Transform data
+
+        return $product->toArray();
+          
     }
 
     /**
